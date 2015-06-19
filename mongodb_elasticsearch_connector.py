@@ -49,6 +49,8 @@ def process_collection(database, collection, index, blacklist=[], db_client=None
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Python script to export MongoDB collections to Elasticsearch.')
+  parser.add_argument('-v', '--verbose', help='Increase output verbosity', action='store_true')
+  parser.add_argument('-d', '--debug', help='Increase output verbosity for debugging', action='store_true')
   parser.add_argument('--mongo_host', default=os.environ.get('MONGO_HOST', 'localhost'),
                       help='Address of the MongoDB host.')
   parser.add_argument('--mongo_port', default=os.environ.get('MONGO_PORT', 27017), type=int,
@@ -70,9 +72,18 @@ if __name__ == '__main__':
                       help='Fields to sanitize out of the MongoDB entries.')
   args = parser.parse_args()
 
-  logging.basicConfig(level=logging.DEBUG)
+  if args.debug:
+    level = logging.DEBUG
+  elif args.verbose:
+    level = logging.INFO
+  else:
+    level = logging.WARN
+  logging.basicConfig(format='%(asctime)s - %(name)s:%(levelname)s - %(message)s', level=level)
 
   index = args.index or 'mongodb-{}-{}'.format(args.database, args.collection)
+
+  logging.warn('Starting export of %s.%s to %s', args.database, args.collection, index)
+
   index = index.lower()
   es_client = Elasticsearch([{'host': args.elasticsearch_host, 'port': args.elasticsearch_port}])
   # ignore 400 cause by IndexAlreadyExistsException when creating an index
@@ -85,3 +96,5 @@ if __name__ == '__main__':
                      db_client=db_client, es_client=es_client)
 
   db_client.close()
+
+  logging.warn('Finished export')
