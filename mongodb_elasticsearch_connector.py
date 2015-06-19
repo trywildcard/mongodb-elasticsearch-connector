@@ -26,13 +26,13 @@ def sanitize_document(document, fields=[]):
   return document
 
 
-def send_to_elasticsearch(document, index, client=None):
+def send_to_elasticsearch(document, index, doc_type='mongodb', client=None):
   """
   Sends the document to Elasticsearch.
   """
 
   logging.debug('Indexing document: %s', document)
-  client.index(index=index, doc_type='mongodb', id=document.pop('_id'), body=document)
+  client.index(index=index, doc_type=doc_type, id=document.pop('_id'), body=document)
 
 
 def process_collection(database, collection, index, blacklist=[], db_client=None, es_client=None):
@@ -44,7 +44,7 @@ def process_collection(database, collection, index, blacklist=[], db_client=None
   collection_data = db_client[database][collection]
   for entry in collection_data.find():
     doc = sanitize_document(entry, blacklist)
-    send_to_elasticsearch(doc, index, es_client)
+    send_to_elasticsearch(doc, index, doc_type=collection.lower(), client=es_client)
 
 
 if __name__ == '__main__':
